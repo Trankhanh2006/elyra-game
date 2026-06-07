@@ -1,5 +1,5 @@
 // ============================================
-// BOSS CLASS
+// BOSS CLASS - ENHANCED
 // ============================================
 
 class Boss {
@@ -17,44 +17,57 @@ class Boss {
         this.attackDamage = config.attackDamage;
         
         this.active = false;
-        this.phase = 1; // For multi-phase bosses
+        this.phase = 1;
         this.lastAttackTime = 0;
         this.projectiles = [];
         this.isDead = false;
         this.chaseDistance = 500;
+        this.damageFlash = 0;
+        
+        // AI system
+        this.ai = new BossAI(this);
+        
+        // Stats
+        this.totalDamageDealt = 0;
+        this.totalDamageTaken = 0;
     }
 
     update(player, deltaTime) {
         if (!this.active) return;
 
-        this.updateAI(player);
+        // Run AI pattern
+        this.ai.update(deltaTime, player);
+        
+        // Update projectiles
         this.updateProjectiles(deltaTime);
-    }
-
-    updateAI(player) {
-        const distToPlayer = this.distanceTo(player.x, player.y);
-
-        // Chase player within chase distance
-        if (distToPlayer < this.chaseDistance) {
-            const dx = player.x - this.x;
-            const dy = player.y - this.y;
-            const distance = Math.sqrt(dx * dx + dy * dy);
-
-            if (distance > 0) {
-                this.x += (dx / distance) * this.speed;
-                this.y += (dy / distance) * this.speed;
-            }
+        
+        // Update damage flash
+        if (this.damageFlash > 0) {
+            this.damageFlash -= deltaTime;
         }
-
-        // Attack
-        if (Date.now() - this.lastAttackTime >= this.attackCooldown) {
-            this.fireProjectile(player);
-            this.lastAttackTime = Date.now();
+        
+        // Phase transition
+        if (this.type === 'morzakFinal' && this.phase === 1 && this.hp <= this.maxHp * 0.5) {
+            this.transitionToPhase2();
         }
 
         // Boundary collision
         this.x = Math.max(this.size, Math.min(CANVAS_WIDTH - this.size, this.x));
         this.y = Math.max(this.size, Math.min(CANVAS_HEIGHT - this.size, this.y));
+    }
+
+    updateProjectiles(deltaTime) {
+        this.projectiles = this.projectiles.filter(proj => {
+            proj.x += proj.vx;
+            proj.y += proj.vy;
+
+            const age = Date.now() - proj.createdAt;
+            const isAlive = age < PROJECTILE_CONFIG.lifetime &&
+                           proj.x > 0 && proj.x < CANVAS_WIDTH &&
+                           proj.y > 0 && proj.y < CANVAS_HEIGHT;
+
+            return isAlive;
+        });
     }
 
     fireProjectile(player) {
@@ -75,24 +88,26 @@ class Boss {
         }
     }
 
-    updateProjectiles(deltaTime) {
-        this.projectiles = this.projectiles.filter(proj => {
-            proj.x += proj.vx;
-            proj.y += proj.vy;
-
-            const age = Date.now() - proj.createdAt;
-            const isAlive = age < PROJECTILE_CONFIG.lifetime &&
-                           proj.x > 0 && proj.x < CANVAS_WIDTH &&
-                           proj.y > 0 && proj.y < CANVAS_HEIGHT;
-
-            return isAlive;
-        });
-    }
-
     takeDamage(amount) {
-        this.hp -= amount;
+        const damage = Math.ceil(amount);
+        this.hp -= damage;
+        this.totalDamageTaken += damage;
+        this.damageFlash = 100; // Flash for 100ms
+        
         if (this.hp < 0) this.hp = 0;
         if (this.hp <= 0) this.isDead = true;
+    }
+
+    heal(amount) {
+        this.hp = Math.min(this.hp + amount, this.maxHp);
+    }
+
+    transitionToPhase2() {
+        this.phase = 2;
+        this.speed *= 1.3;
+        this.attackCooldown *= 0.8;
+        this.ai.attackPattern = this.ai.getAttackPattern(this.type);
+        console.log('Boss transitioned to Phase 2!');
     }
 
     distanceTo(x, y) {
