@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ELYRA - Adventure Game</title>
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+    <div id="gameContainer">
+        <canvas id="gameCanvas" width="1024" height="768"></canvas>
+        
+        <!-- UI Overlay -->
+        <div id="uiOverlay">
+            <!-- Story Panel -->
+            <div id="storyPanel">
+                <div id="storyText"></div>
+            </div>
+            
+            <!-- Status Bar -->
+            <div id="statusBar">
+                <div id="playerStatus">
+                    <span class="label">HP:</span>
+                    <div class="hpBar">
+                        <div id="hpFill" class="hpFillBar"></div>
+                    </div>
+                    <span id="hpText">100/100</span>
+                </div>
+                <div id="mapStatus">
+                    <span id="mapName">MAP: Lumina</span>
+                </div>
+                <div id="storyStatus">
+                    <span id="stepInfo">Step: 0</span>
+                </div>
+            </div>
+            
+            <!-- Mobile Controls -->
+            <div id="mobileControls">
+                <div id="dpadContainer">
+                    <button class="dpadBtn" id="btnUp" data-dir="up">↑</button>
+                    <div class="dpadMiddle">
+                        <button class="dpadBtn" id="btnLeft" data-dir="left">←</button>
+                        <button class="dpadBtn" id="btnRight" data-dir="right">→</button>
+                    </div>
+                    <button class="dpadBtn" id="btnDown" data-dir="down">↓</button>
+                </div>
+                <div id="actionButtons">
+                    <button id="btnSave" class="actionBtn saveBtn">Save</button>
+                    <button id="btnLoad" class="actionBtn loadBtn">Load</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="js/constants.js"></script>
+    <script src="js/input.js"></script>
+    <script src="js/player.js"></script>
+    <script src="js/boss.js"></script>
+    <script src="js/collision.js"></script>
+    <script src="js/storyEngine.js"></script>
+    <script src="js/mapSystem.js"></script>
+    <script src="js/saveSystem.js"></script>
+    <script src="js/render.js"></script>
+    <script src="js/game.js"></script>
+    <script src="js/main.js"></script>
+</body>
+</html>
