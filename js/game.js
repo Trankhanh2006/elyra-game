@@ -1,153 +1,135 @@
 // ============================================
-// MAIN GAME CLASS - ENHANCED
+// COMPLETE GAME SYSTEM
 // ============================================
 
 class Game {
     constructor() {
         this.canvas = document.getElementById('gameCanvas');
         this.input = new InputManager();
-        this.render = new RenderSystem(this.canvas);
+        this.worldBuilder = new WorldBuilder();
+        this.tileRenderer = new TileRenderer(this.canvas);
+        this.render = new RenderSystem(this.canvas, this.tileRenderer);
         this.effects = new EffectSystem();
         this.sound = new SoundSystem();
+        this.questSystem = new QuestSystem();
 
         this.mapSystem = new MapSystem();
         this.storyEngine = new StoryEngine();
         this.player = new Player(CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2);
         this.boss = null;
+        this.currentMap = null;
 
         this.gameRunning = true;
         this.gameWon = false;
         this.gameLost = false;
-        this.difficulty = 'normal'; // easy, normal, hard
-
         this.lastTime = Date.now();
         this.lastSaveTime = Date.now();
-        this.frameCount = 0;
-        this.fps = 0;
-        this.statsPanel = {
-            bossesDefeated: 0,
-            itemsCollected: 0,
-            damageDealt: 0,
-            damageTaken: 0
-        };
 
         this.initializeMap();
     }
 
     initializeMap() {
-        const map = this.mapSystem.getCurrentMap();
+        const mapId = this.mapSystem.currentMapId;
+        this.currentMap = this.worldBuilder.getMap(mapId);
 
-        // Create boss if map has one
-        if (map.boss) {
-            this.boss = new Boss(
-                CANVAS_WIDTH / 2 + 150,
-                CANVAS_HEIGHT / 2 - 100,
-                map.boss
-            );
-            
-            // Apply difficulty modifiers
-            this.applyDifficultyToBoss(this.boss);
+        // Spawn player at safe location
+        this.player.x = 16 * 32 + 16; // Center of map
+        this.player.y = 12 * 32 + 16;
+
+        // Create boss if needed
+        if (this.currentMap.objects.find(o => o.type === 'portal')) {
+            const bossType = this.mapSystem.maps[mapId].boss;
+            if (bossType) {
+                const bossPos = this.currentMap.objects.find(o => o.type === 'portal');
+                this.boss = new Boss(bossPos.x * 32 + 16, bossPos.y * 32 + 16, bossType);
+            }
+        }
+
+        // Start first quest if not started
+        if (!this.questSystem.activeQuest) {
+            this.questSystem.startQuest('lumina_collect_crystals');
         }
 
         // Start story
-        this.storyEngine.playStory(map.id, this);
-        this.sound.playBossAppear();
-    }
-
-    applyDifficultyToBoss(boss) {
-        switch (this.difficulty) {
-            case 'easy':
-                boss.hp *= 0.7;
-                boss.maxHp = boss.hp;
-                boss.attackDamage *= 0.8;
-                boss.speed *= 0.8;
-                break;
-            case 'hard':
-                boss.hp *= 1.5;
-                boss.maxHp = boss.hp;
-                boss.attackDamage *= 1.3;
-                boss.speed *= 1.2;
-                break;
-        }
+        this.storyEngine.playStory(mapId, this);
+        console.log('📍 Map loaded:', this.currentMap.name);
     }
 
     update(deltaTime) {
         if (this.gameLost || this.gameWon) return;
 
         // Update systems
-        this.player.update(this.input, deltaTime);
+        this.player.update(this.input, deltaTime, this.currentMap.tiles);
         if (this.boss) this.boss.update(this.player, deltaTime);
         this.storyEngine.update(deltaTime, this);
         this.effects.update(deltaTime);
 
-        // Collision detection
-        this.handleCollisions();
-
-        // Map progression
+        // Check collisions
+        this.checkCollisions();
         this.checkMapProgression();
-
-        // Auto-save
         this.autoSave();
     }
 
-    handleCollisions() {
-        // Player vs Boss contact
+    checkCollisions() {
+        // Player vs Boss
         if (this.boss && this.boss.active && CollisionSystem.playerVsBoss(this.player, this.boss)) {
             if (this.player.performAttack()) {
-                const isCritical = Math.random() < 0.2; // 20% crit chance
-                const damage = isCritical 
-                    ? PLAYER_CONFIG.ATTACK_DAMAGE * 1.5 
-                    : PLAYER_CONFIG.ATTACK_DAMAGE;
+                const isCritical = Math.random() < 0.2;
+                const damage = isCritical ? PLAYER_CONFIG.ATTACK_DAMAGE * 1.5 : PLAYER_CONFIG.ATTACK_DAMAGE;
                 
                 this.boss.takeDamage(damage);
-                this.statsPanel.damageDealt += damage;
-                
-                // Effects
                 this.effects.addAnimation(this.boss.x, this.boss.y, 'damage');
                 this.effects.addDamageNumber(this.boss.x, this.boss.y, Math.ceil(damage), isCritical);
                 this.effects.screenShake(3, 100);
                 this.sound.playAttack();
-            }
-            
-            // Take contact damage
-            this.player.takeDamage(1);
-            this.statsPanel.damageTaken += 1;
-            this.sound.playDamage();
-        }
 
-        // Player vs Boss projectiles
-        if (this.boss) {
-            const projectilesToRemove = [];
-            for (let i = 0; i < this.boss.projectiles.length; i++) {
-                const proj = this.boss.projectiles[i];
-                if (CollisionSystem.playerVsProjectile(this.player, proj)) {
-                    this.player.takeDamage(proj.damage);
-                    this.statsPanel.damageTaken += proj.damage;
-                    projectilesToRemove.push(i);
-                    
-                    // Effects
-                    this.effects.addAnimation(this.player.x, this.player.y, 'damage');
-                    this.effects.addDamageNumber(this.player.x, this.player.y, proj.damage);
-                    this.effects.screenShake(5, 150);
-                    this.sound.playDamage();
+                if (this.boss.isDead()) {
+                    this.questSystem.updateProgress('boss', this.boss.type);
+                    this.sound.playVictory();
                 }
             }
-            // Remove hit projectiles
-            for (let i = projectilesToRemove.length - 1; i >= 0; i--) {
-                this.boss.projectiles.splice(projectilesToRemove[i], 1);
+            this.player.takeDamage(1);
+            this.effects.screenShake(5, 150);
+        }
+
+        // Player vs Projectiles
+        if (this.boss) {
+            for (let i = this.boss.projectiles.length - 1; i >= 0; i--) {
+                if (CollisionSystem.playerVsProjectile(this.player, this.boss.projectiles[i])) {
+                    const damage = this.boss.projectiles[i].damage;
+                    this.player.takeDamage(damage);
+                    this.effects.addAnimation(this.player.x, this.player.y, 'damage');
+                    this.effects.addDamageNumber(this.player.x, this.player.y, damage);
+                    this.sound.playDamage();
+                    this.boss.projectiles.splice(i, 1);
+                }
             }
         }
 
-        // Player vs Items
-        const item = this.mapSystem.checkItemCollision(this.player);
-        if (item) {
-            this.mapSystem.collectItem(item);
-            this.statsPanel.itemsCollected += 1;
-            
-            // Effects
-            this.effects.addAnimation(item.x, item.y, 'heal');
-            this.sound.playCollect();
-            console.log('Collected:', item.type);
+        // Player vs Map Objects
+        for (let obj of this.currentMap.objects) {
+            const objX = obj.x * 32 + 16;
+            const objY = obj.y * 32 + 16;
+            const distance = Math.hypot(this.player.x - objX, this.player.y - objY);
+
+            if (distance < 40) {
+                if (obj.type === 'crystal') {
+                    this.questSystem.updateProgress('collect', 'crystal');
+                    obj.type = 'collected';
+                    this.effects.addAnimation(objX, objY, 'heal');
+                    this.sound.playCollect();
+                } else if (obj.type === 'mirror') {
+                    this.questSystem.updateProgress('collect', 'mirror');
+                    obj.type = 'collected';
+                    this.effects.addAnimation(objX, objY, 'damage');
+                    this.sound.playCollect();
+                } else if (obj.type === 'memory') {
+                    this.questSystem.updateProgress('collect', 'memory');
+                    obj.type = 'collected';
+                    this.effects.addAnimation(objX, objY, 'heal');
+                    this.sound.playCollect();
+                }
+            }
         }
     }
 
@@ -155,31 +137,44 @@ class Game {
         // Boss defeated
         if (this.boss && this.boss.isDead()) {
             this.boss.active = false;
-            this.statsPanel.bossesDefeated += 1;
-            this.sound.playVictory();
-            
-            if (this.mapSystem.progressToNextMap()) {
-                setTimeout(() => this.initializeMap(), 1000);
-            } else {
-                // Game won!
-                this.gameWon = true;
-                this.storyEngine.isPlaying = false;
-                document.getElementById('storyText').innerText = 
-                    '🎉 ELYRA - HOÀN THÀNH! 🎉\n' +
-                    'Bạn đã cứu Khánh và thế giới khỏi bóng tối!\n' +
-                    `\nBosses Defeated: ${this.statsPanel.bossesDefeated}\n` +
-                    `Items Collected: ${this.statsPanel.itemsCollected}\n` +
-                    `Damage Dealt: ${Math.ceil(this.statsPanel.damageDealt)}`;
+            if (this.questSystem.isQuestComplete()) {
+                const reward = this.questSystem.completeQuest();
+                this.player.addXP(reward.xp);
+                this.player.addGold(reward.gold);
+                
+                setTimeout(() => {
+                    if (this.mapSystem.progressToNextMap()) {
+                        this.initializeMap();
+                    } else {
+                        this.winGame();
+                    }
+                }, 1500);
             }
-            return;
         }
 
-        // Map cleared
-        if (!this.boss && this.mapSystem.isMapComplete()) {
+        // Quest complete
+        if (this.questSystem.isQuestComplete() && !this.boss) {
+            const reward = this.questSystem.completeQuest();
+            this.player.addXP(reward.xp);
+            this.player.addGold(reward.gold);
+            
             if (this.mapSystem.progressToNextMap()) {
-                setTimeout(() => this.initializeMap(), 1000);
+                setTimeout(() => this.initializeMap(), 1500);
             }
         }
+    }
+
+    winGame() {
+        this.gameWon = true;
+        this.storyEngine.isPlaying = false;
+        document.getElementById('storyText').innerText = 
+            '🎉 ELYRA - HOÀN THÀNH! 🎉\n' +
+            'Bạn đã cứu Khánh và thế giới khỏi bóng tối!\n' +
+            `\n⭐ Final Stats:\n` +
+            `🏆 Level: ${this.player.stats.level}\n` +
+            `💰 Gold: ${this.player.stats.gold}\n` +
+            `✨ XP: ${this.player.stats.xp}`;
+        this.sound.playVictory();
     }
 
     autoSave() {
@@ -191,69 +186,30 @@ class Game {
     }
 
     render() {
-        const map = this.mapSystem.getCurrentMap();
-        const shakeOffset = this.effects.getScreenShakeOffset();
-
-        // Save context state
-        this.render.ctx.save();
-        
-        // Apply screen shake
-        this.render.ctx.translate(shakeOffset.x, shakeOffset.y);
-
-        // Background and grid
-        this.render.clear(map.background);
-        this.render.drawGrid(map.gridColor);
-
-        // Map objects
-        this.render.drawItems(map.items);
-        if (map.npc) this.render.drawNPC(map.npc);
-
-        // Game entities
-        this.render.drawPlayer(this.player);
-        if (this.boss) {
-            this.render.drawProjectiles(this.boss.projectiles);
-            this.render.drawBoss(this.boss);
-        }
-
-        // Effects
-        this.effects.draw(this.render.ctx);
-
-        // Restore context state
-        this.render.ctx.restore();
-
-        // UI
-        this.render.updateUI(this.player, map.name, this.storyEngine.storyStep);
+        this.render.render(this);
     }
 
     gameLoop() {
         const now = Date.now();
-        const deltaTime = Math.min(now - this.lastTime, 16); // Cap at 60 FPS
+        const deltaTime = Math.min(now - this.lastTime, 16);
         this.lastTime = now;
 
-        // Update
         this.update(deltaTime);
-
-        // Render
         this.render();
 
-        // Check game end
         if (this.player.isDead) {
             this.gameLost = true;
             document.getElementById('storyText').innerText = 
-                '💀 GAME OVER\n' +
-                'Vy đã rơi vào tối tăm...\n' +
-                `\nBosses Defeated: ${this.statsPanel.bossesDefeated}\n` +
-                `Items Collected: ${this.statsPanel.itemsCollected}`;
+                '💀 GAME OVER\nVy đã rơi vào tối tăm...\n\nPress F5 to restart';
             this.sound.playGameOver();
             return;
         }
 
-        // Continue loop
         requestAnimationFrame(() => this.gameLoop());
     }
 
     start() {
-        console.log('🎮 ELYRA Enhanced Game Started!');
+        console.log('🎮 ELYRA - Complete Game Started!');
         this.gameLoop();
     }
 
@@ -263,16 +219,7 @@ class Game {
 
     loadGame() {
         if (SaveSystem.load(this)) {
-            console.log('Game loaded, restarting...');
-            this.gameRunning = true;
-            this.gameWon = false;
-            this.gameLost = false;
             this.gameLoop();
         }
-    }
-
-    setDifficulty(level) {
-        this.difficulty = level; // easy, normal, hard
-        console.log('Difficulty set to:', level);
     }
 }

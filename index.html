@@ -3,67 +3,33 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ELYRA - Enhanced Adventure Game</title>
+    <title>ELYRA - Complete Adventure Game</title>
     <link rel="stylesheet" href="css/styles.css">
 </head>
 <body>
     <div id="gameContainer">
         <canvas id="gameCanvas" width="1024" height="768"></canvas>
         
-        <!-- UI Overlay -->
-        <div id="uiOverlay">
-            <!-- Story Panel -->
-            <div id="storyPanel">
-                <div id="storyText"></div>
-            </div>
-            
-            <!-- Status Bar -->
-            <div id="statusBar">
-                <div id="playerStatus">
-                    <span class="label">HP:</span>
-                    <div class="hpBar">
-                        <div id="hpFill" class="hpFillBar"></div>
-                    </div>
-                    <span id="hpText">100/100</span>
-                </div>
-                <div id="mapStatus">
-                    <span id="mapName">MAP: Lumina</span>
-                </div>
-                <div id="storyStatus">
-                    <span id="stepInfo">Step: 0</span>
-                </div>
-            </div>
-            
-            <!-- Mobile Controls -->
-            <div id="mobileControls">
-                <div id="dpadContainer">
-                    <button class="dpadBtn" id="btnUp" data-dir="up">↑</button>
-                    <div class="dpadMiddle">
-                        <button class="dpadBtn" id="btnLeft" data-dir="left">←</button>
-                        <button class="dpadBtn" id="btnRight" data-dir="right">→</button>
-                    </div>
-                    <button class="dpadBtn" id="btnDown" data-dir="down">↓</button>
-                </div>
-                <div id="actionButtons">
-                    <button id="btnSave" class="actionBtn saveBtn">Save</button>
-                    <button id="btnLoad" class="actionBtn loadBtn">Load</button>
-                </div>
-            </div>
-
-            <!-- Difficulty Selector -->
-            <div id="difficultySelector">
-                <div id="difficultyButtons">
-                    <button id="easyBtn" class="diffBtn">Easy</button>
-                    <button id="normalBtn" class="diffBtn active">Normal</button>
-                    <button id="hardBtn" class="diffBtn">Hard</button>
-                </div>
-            </div>
+        <!-- Story Panel -->
+        <div id="storyPanel">
+            <div id="storyText"></div>
+        </div>
+        
+        <!-- Control Panel -->
+        <div id="controlPanel">
+            <button id="btnSave" class="controlBtn">💾 Save</button>
+            <button id="btnLoad" class="controlBtn">📂 Load</button>
+            <button id="btnHelp" class="controlBtn">❓ Help</button>
         </div>
     </div>
 
     <!-- Scripts -->
     <script src="js/constants.js"></script>
     <script src="js/input.js"></script>
+    <script src="js/worldBuilder.js"></script>
+    <script src="js/questSystem.js"></script>
+    <script src="js/sprite.js"></script>
+    <script src="js/tileRenderer.js"></script>
     <script src="js/player.js"></script>
     <script src="js/sound.js"></script>
     <script src="js/animation.js"></script>

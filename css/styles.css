@@ -21,7 +21,7 @@ body {
     height: 768px;
     background: #000;
     border: 4px solid #00ff00;
-    box-shadow: 0 0 30px rgba(0, 255, 0, 0.6), inset 0 0 30px rgba(0, 255, 0, 0.1);
+    box-shadow: 0 0 30px rgba(0, 255, 0, 0.6);
     overflow: hidden;
 }
 
@@ -29,18 +29,6 @@ canvas#gameCanvas {
     display: block;
     width: 100%;
     height: 100%;
-    background: #0a0a0a;
-}
-
-/* UI Overlay */
-#uiOverlay {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    pointer-events: none;
-    z-index: 1000;
 }
 
 /* Story Panel */
@@ -49,192 +37,39 @@ canvas#gameCanvas {
     bottom: 20px;
     left: 20px;
     right: 20px;
-    max-height: 120px;
+    max-height: 100px;
     background: rgba(0, 0, 0, 0.85);
     border: 2px solid #00ff00;
     border-radius: 8px;
     padding: 15px;
     box-shadow: 0 0 15px rgba(0, 255, 0, 0.3);
     pointer-events: none;
+    z-index: 100;
 }
 
 #storyText {
-    font-size: 14px;
-    line-height: 1.5;
+    font-size: 13px;
+    line-height: 1.4;
     color: #00ff00;
     text-shadow: 0 0 5px #00ff00;
-    font-family: 'Arial', sans-serif;
-    max-height: 90px;
-    overflow: hidden;
-    word-wrap: break-word;
-}
-
-/* Status Bar */
-#statusBar {
-    position: absolute;
-    top: 12px;
-    left: 12px;
-    right: 12px;
-    height: 50px;
-    background: rgba(0, 0, 0, 0.8);
-    border: 2px solid #00ff00;
-    border-radius: 5px;
-    padding: 8px 15px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: 20px;
-    box-shadow: 0 0 10px rgba(0, 255, 0, 0.2);
-}
-
-#playerStatus {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    min-width: 220px;
-}
-
-.label {
-    color: #00ff00;
-    font-weight: bold;
-    font-size: 12px;
-}
-
-.hpBar {
-    width: 100px;
-    height: 16px;
-    background: #1a1a1a;
-    border: 1px solid #00ff00;
-    border-radius: 3px;
+    max-height: 80px;
     overflow: hidden;
 }
 
-.hpFillBar {
-    height: 100%;
-    background: linear-gradient(90deg, #00ff00, #ffff00);
-    width: 100%;
-    transition: width 0.15s ease-out;
-    box-shadow: 0 0 5px #00ff00;
-}
-
-#hpText {
-    font-size: 11px;
-    color: #00ff00;
-    min-width: 50px;
-    text-align: right;
-}
-
-#mapStatus {
-    flex: 1;
-    text-align: center;
-    font-size: 13px;
-    font-weight: bold;
-    color: #00ffff;
-    text-shadow: 0 0 5px #00ffff;
-}
-
-#storyStatus {
-    font-size: 11px;
-    color: #ffff00;
-}
-
-/* Difficulty Selector */
-#difficultySelector {
-    position: absolute;
-    top: 12px;
-    right: 200px;
-    pointer-events: auto;
-    background: rgba(0, 0, 0, 0.8);
-    border: 2px solid #ff6600;
-    border-radius: 5px;
-    padding: 8px;
-    display: flex;
-    gap: 5px;
-}
-
-.diffBtn {
-    width: 60px;
-    height: 30px;
-    background: rgba(255, 102, 0, 0.2);
-    border: 1px solid #ff6600;
-    color: #ff6600;
-    font-weight: bold;
-    font-size: 11px;
-    cursor: pointer;
-    border-radius: 3px;
-    transition: all 0.2s;
-}
-
-.diffBtn:hover {
-    background: rgba(255, 102, 0, 0.4);
-}
-
-.diffBtn.active {
-    background: rgba(255, 102, 0, 0.8);
-    box-shadow: 0 0 10px #ff6600;
-}
-
-/* Mobile Controls */
-#mobileControls {
+/* Control Panel */
+#controlPanel {
     position: absolute;
     bottom: 140px;
-    right: 15px;
-    pointer-events: auto;
+    right: 20px;
     display: flex;
-    gap: 15px;
+    flex-direction: column;
+    gap: 8px;
     z-index: 50;
 }
 
-#dpadContainer {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    background: rgba(0, 0, 0, 0.7);
-    padding: 10px;
-    border-radius: 12px;
-    border: 2px solid #00ff00;
-}
-
-.dpadMiddle {
-    display: flex;
-    gap: 8px;
-    justify-content: center;
-}
-
-.dpadBtn {
-    width: 50px;
-    height: 50px;
-    background: rgba(0, 255, 0, 0.2);
-    border: 2px solid #00ff00;
-    color: #00ff00;
-    font-weight: bold;
-    font-size: 18px;
-    cursor: pointer;
-    border-radius: 5px;
-    transition: all 0.1s;
-    touch-action: manipulation;
-    pointer-events: auto;
-}
-
-.dpadBtn:active {
-    background: rgba(0, 255, 0, 0.6);
-    box-shadow: 0 0 12px #00ff00;
-    transform: scale(0.95);
-}
-
-#actionButtons {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    background: rgba(0, 0, 0, 0.7);
-    padding: 10px;
-    border-radius: 12px;
-    border: 2px solid #ff6600;
-}
-
-.actionBtn {
-    width: 70px;
-    height: 45px;
+.controlBtn {
+    width: 80px;
+    height: 40px;
     background: rgba(255, 102, 0, 0.2);
     border: 2px solid #ff6600;
     color: #ff6600;
@@ -243,41 +78,31 @@ canvas#gameCanvas {
     cursor: pointer;
     border-radius: 5px;
     transition: all 0.1s;
-    touch-action: manipulation;
     pointer-events: auto;
 }
 
-.actionBtn:active {
+.controlBtn:active {
     background: rgba(255, 102, 0, 0.7);
-    box-shadow: 0 0 12px #ff6600;
+    box-shadow: 0 0 10px #ff6600;
     transform: scale(0.95);
 }
 
-/* Hide mobile controls on desktop */
-@media (min-width: 769px) {
-    #mobileControls {
-        display: none;
-    }
-    
-    #difficultySelector {
-        display: flex;
-    }
-}
-
-/* Show mobile controls on mobile */
+/* Mobile responsive */
 @media (max-width: 768px) {
     #gameContainer {
         width: 100%;
         height: 100vh;
         border: none;
-        border-radius: 0;
     }
     
-    #mobileControls {
-        display: flex !important;
+    #controlPanel {
+        bottom: 10px;
+        right: 10px;
     }
     
-    #difficultySelector {
-        display: none;
+    .controlBtn {
+        width: 70px;
+        height: 35px;
+        font-size: 9px;
     }
 }
